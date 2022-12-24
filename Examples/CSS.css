@@ -1,0 +1,60 @@
+/* Select all elements on the page */
+* {
+  border: 1px solid red;
+}
+
+/* ------------------------------------------------------*/
+/* Select a single element */
+p {
+  color: green;
+}
+
+/* ------------------------------------------------------*/
+/* Select a child element of h4 inside of li */
+li h4 {
+  color: gold;
+}
+
+/* ------------------------------------------------------*/
+/* Select multiple elements */
+li,
+h5 {
+  font-family: monospace;
+}
+
+/* ------------------------------------------------------*/
+/* Select a single element with a particular style/setting */
+
+a[href*='florence'] {
+  color: lightgreen;
+}
+
+/* ------------------------------------------------------*/
+/* Select a single element with a particular interaction reaction */
+a:hover {
+  color:darkorange;
+}
+
+/* ------------------------------------------------------*/
+/* Select a single class */
+.title {
+  color: teal;
+}
+
+/* ------------------------------------------------------*/
+/* Select a single ID */
+#article-title {
+  font-family: cursive;
+}
+
+
+/* ------------------------------------------------------*/
+/* Property to hide  */
+
+.donate{
+  visibility: hidden;
+}
+/* or */
+.donate{
+  display: none;
+}
