@@ -428,8 +428,64 @@ function showFortune(){
 
 button.addEventListener('click', showFortune);
 
+/*-------------------------------------------------------*/
+/* Classes example, with the main class HospitalEmployee */
+/* adding the shared methods and attributes and two sub  */
+/* classes Nurse and Doctor that extend and add their    */
+/* own. HospitalEmployee also has a method available only*/
+/* to it, called generatePassword, but the two subs don't*/
+/*-------------------------------------------------------*/
 
+class HospitalEmployee {
+  constructor(name) {
+    this._name = name;
+    this._remainingVacationDays = 20;
+  }
+  
+  get name() {
+    return this._name;
+  }
+  
+  get remainingVacationDays() {
+    return this._remainingVacationDays;
+  }
 
+  static generatePassword() {
+    const pass = Math.floor(Math.random() * 10000)
+    return pass;
+  }
+
+  takeVacationDays(daysOff) {
+    this._remainingVacationDays -= daysOff;
+  }
+}
+
+class Nurse extends HospitalEmployee {
+  constructor(name, certifications) {
+    super(name);
+    this._certifications = certifications;
+  } 
+  get certifications(){
+    return this._certifications;
+  }
+  addCertification(newCertification){
+    this._certifications.push(newCertification);
+    return this._certifications;
+  }
+}
+
+class Doctor extends HospitalEmployee{
+  constructor(name) {
+    super(name);
+  }
+}
+
+const nurseOlynyk = new Nurse('Olynyk', ['Trauma','Pediatrics']);
+nurseOlynyk.takeVacationDays(5);
+console.log(nurseOlynyk.remainingVacationDays);
+
+nurseOlynyk.addCertification('Genetics');
+console.log(nurseOlynyk.certifications)
 
 
 
