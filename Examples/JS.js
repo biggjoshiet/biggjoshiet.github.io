@@ -770,6 +770,7 @@ function restockSuccess() {
     return (Math.random() > .2);
 }
 */
+
 /*-------------------------------------------------------*/
 /* comparison of callback functions, Promises, and then */
 /* async... await */
@@ -809,3 +810,488 @@ async function readFiles() {
 }
 
 readFiles();
+
+/* from promise or native to async example: */
+const brainstormDinner = require('./library.js');
+
+
+// Native promise version:
+function nativePromiseDinner() {
+  brainstormDinner().then((meal) => {
+    console.log(`I'm going to make ${meal} for dinner.`);
+  });
+}
+
+
+// async/await version:
+async function announceDinner() {
+  // Write your code below:
+  let printedString = await brainstormDinner();
+  console.log(`I'm going to make ${printedString} for dinner.`);
+}
+brainstormDinner();
+// prints it out again, with the async .. await call
+announceDinner();
+
+// chained async await functions:
+const {shopForBeans, soakTheBeans, cookTheBeans} = require('./library.js');
+
+// Write your code below:
+async function makeBeans() {
+   let type = await shopForBeans();
+   let isSoft = await soakTheBeans(type);
+   let dinner = await cookTheBeans(isSoft);
+   console.log(dinner);
+}
+makeBeans();
+// with the library.js file:
+/*
+This is the shopForBeans function from the last exercise
+*/
+
+const shopForBeans = () => {
+  return new Promise((resolve, reject) => {
+  const beanTypes = ['kidney', 'fava', 'pinto', 'black', 'garbanzo'];
+  setTimeout(()=>{
+    let randomIndex = Math.floor(Math.random() * 5);
+    let beanType = beanTypes[randomIndex];
+    console.log(`I bought ${beanType} beans because they were on sale.`);
+   resolve(beanType);
+  }, 1000)
+})
+}
+
+let soakTheBeans = (beanType) => {
+   return new Promise((resolve, reject) => {
+     console.log('Time to soak the beans.');
+    setTimeout(()=>{
+      console.log(`... The ${beanType} beans are softened.`);
+      resolve(true);
+      }, 1000);
+  });
+}
+
+let cookTheBeans = (isSoftened) => {
+  return new Promise((resolve, reject) => {
+    console.log('Time to cook the beans.');
+    setTimeout(()=>{
+      if (isSoftened) {
+        console.log('... The beans are cooked!');
+        resolve('\n\nDinner is served!');
+      }
+    }, 1000);
+  });
+}
+
+  
+module.exports = {shopForBeans, soakTheBeans, cookTheBeans};
+
+// async await with try/catch
+const cookBeanSouffle = require('./library.js');
+
+// Write your code below:
+
+async function hostDinnerParty() {
+  try {
+    let dinner = await cookBeanSouffle();
+    console.log(`${dinner} is served!`)
+  } catch(error) {
+    console.log(error);
+    console.log(`Ordering a pizza!`);
+  }
+}
+
+hostDinnerParty();
+// accompanying library.js file
+// This function returns true 50% of the time.
+let randomSuccess = () => {
+ let num = Math.random();
+ if (num < .5 ){
+   return true;
+ } else {
+   return false;
+ }
+};
+
+// This function returns a promise that resolves half of the time and rejects half of the time
+let cookBeanSouffle = () => {
+ return new Promise((resolve, reject) => {
+   console.log('Fingers crossed... Putting the Bean Souffle in the oven');
+   setTimeout(()=>{
+     let success = randomSuccess();
+     if(success){
+       resolve('Bean Souffle');
+     } else {
+       reject('Dinner is ruined!');
+     }
+   }, 1000);
+ });
+};
+
+module.exports = cookBeanSouffle;
+
+//example with the async waiting on multiple Promises with the library.js from previous example: 
+let {cookBeans, steamBroccoli, cookRice, bakeChicken} = require('./library.js');
+
+async function serveDinnerAgain() {
+  let foodArray = await Promise.all([steamBroccoli(), cookRice(), bakeChicken(), cookBeans()])
+  console.log(`Dinner is served. We’re having ${foodArray[0]}, ${foodArray[1]}, ${foodArray[2]}, and ${foodArray[3]}.`);
+}
+
+serveDinnerAgain();
+
+/*-------------------------------------------------------*/
+/* using GET posts with fetch and formatting JSON data: */
+/*-------------------------------------------------------*/
+// Information to reach API
+const url = 'https://api.datamuse.com/words?sl=';
+
+// Selects page elements
+const inputField = document.querySelector('#input');
+const submit = document.querySelector('#submit');
+const responseField = document.querySelector('#responseField');
+
+// Asynchronous function
+const getSuggestions = () => {
+  const wordQuery = inputField.value;
+  const endpoint = `${url}${wordQuery}`;
+  
+  fetch(endpoint, {cache: 'no-cache'})
+    .then(response => {
+      if (response.ok) {
+        return response.json();
+      }
+      throw new Error('Request failed!');
+ }, networkError => {
+     console.log(networkError.message)
+  })
+    .then(jsonResponse => {
+      //renderRawResponse(jsonResponse);
+      renderResponse(jsonResponse);
+    })
+}
+
+// Clears previous results and display results to webpage
+const displaySuggestions = (event) => {
+  event.preventDefault();
+  while(responseField.firstChild){
+    responseField.removeChild(responseField.firstChild);
+  }
+  getSuggestions();
+};
+
+submit.addEventListener('click', displaySuggestions);
+
+//the helperFunctions.js file:
+// Formats response to look presentable on webpage
+const renderResponse = (res) => {
+  // Handles if res is falsey
+  if(!res){
+    console.log(res.status);
+  }
+  // In case res comes back as a blank array
+  if(!res.length){
+    responseField.innerHTML = "<p>Try again!</p><p>There were no suggestions found!</p>";
+    return;
+  }
+
+  // Creates an empty array to contain the HTML strings
+  let wordList = [];
+  // Loops through the response and caps off at 10
+  for(let i = 0; i < Math.min(res.length, 10); i++){
+    // creating a list of words
+    wordList.push(`<li>${res[i].word}</li>`);
+  }
+  // Joins the array of HTML strings into one string
+  wordList = wordList.join("");
+
+  // Manipulates responseField to render the modified response
+  responseField.innerHTML = `<p>You might be interested in:</p><ol>${wordList}</ol>`;
+  return
+}
+
+// Renders response before it is modified
+const renderRawResponse = (res) => {
+  // Takes the first 10 words from res
+  let trimmedResponse = res.slice(0, 10);
+  // Manipulates responseField to render the unformatted response
+  responseField.innerHTML = `<text>${JSON.stringify(trimmedResponse)}</text>`;
+}
+
+// Renders the JSON that was returned when the Promise from fetch resolves.
+const renderJsonResponse = (res) => {
+  // Creates an empty object to store the JSON in key-value pairs
+  let rawJson = {};
+  for(let key in res){
+    rawJson[key] = res[key];
+  }
+  // Converts JSON into a string and adding line breaks to make it easier to read
+  rawJson = JSON.stringify(rawJson).replace(/,/g, ", \n");
+  // Manipulates responseField to show the returned JSON.
+  responseField.innerHTML = `<pre>${rawJson}</pre>`;
+}
+
+
+/*-------------------------------------------------------*/
+/* link shortener example using fetch, POST, */
+/*and thens with rebrandly */
+/*-------------------------------------------------------*/
+// Information to reach API
+const apiKey = '35b9143a1c484967997dd7ed782ce35e';
+const url = 'https://api.rebrandly.com/v1/links';
+
+// Some page elements
+const inputField = document.querySelector('#input');
+const shortenButton = document.querySelector('#shorten');
+const responseField = document.querySelector('#responseField');
+
+// Asynchronous functions
+const shortenUrl = () => {
+  const urlToShorten = inputField.value;
+  const data = JSON.stringify({destination: urlToShorten});
+  
+  fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-type': 'application/json',
+      'apikey': apiKey
+    },
+    body: data
+  })
+  .then(
+    response => {
+      if(response.ok){
+        return response.json();
+      }
+      throw new Error("Request failed!")
+    }, 
+    networkError => {
+      console.log(networkError.message);
+    }
+  )
+  .then(jsonResponse => {
+    renderResponse(jsonResponse);
+  })
+}
+
+// Clear page and call Asynchronous functions
+const displayShortUrl = (event) => {
+  event.preventDefault();
+  while(responseField.firstChild){
+    responseField.removeChild(responseField.firstChild);
+  }
+  shortenUrl();
+}
+
+shortenButton.addEventListener('click', displayShortUrl);
+
+// helperFunctions.js
+// Manipulates responseField to render a formatted and appropriate message
+const renderResponse = (res) => {
+  // Displays either message depending on results
+  if(res.errors){
+    responseField.innerHTML = "<p>Sorry, couldn't format your URL.</p><p>Try again.</p>";
+  } else {  
+    responseField.innerHTML = `<p>Your shortened url is: </p><p> ${res.shortUrl} </p>`;
+  }
+}
+
+// Manipulates responseField to render an unformatted response
+const renderRawResponse = (res) => {
+  // Displays either message depending on results
+  if(res.errors){  
+    responseField.innerHTML = "<p>Sorry, couldn't format your URL.</p><p>Try again.</p>";
+  } else {
+    // Adds line breaks for JSON
+    let structuredRes = JSON.stringify(res).replace(/,/g, ", \n");
+    structuredRes = `<pre>${structuredRes}</pre>`;
+    responseField.innerHTML = `${structuredRes}`;
+  }
+}
+
+// Renders the JSON that was returned when the Promise from fetch resolves.
+const renderJsonResponse = (response) => {
+  // Creates an empty object to store the JSON in key-value pairs
+  let rawJson = {}
+  for(let key in response){
+    rawJson[key] = response[key]
+  }
+  // Converts JSON into a string and adding line breaks to make it easier to read
+  rawJson = JSON.stringify(rawJson).replace(/,/g, ", \n")
+  // Manipulates responseField to show the returned JSON.
+  responseField.innerHTML = `<pre>${rawJson}</pre>`
+}
+
+/*-------------------------------------------------------*/
+/* GET function with async .. await */
+/*-------------------------------------------------------*/
+// Information to reach API
+const url = 'https://api.datamuse.com/words?';
+const queryParams = 'rel_jja=';
+
+// Selecting page elements
+const inputField = document.querySelector('#input');
+const submit = document.querySelector('#submit');
+const responseField = document.querySelector('#responseField');
+
+// Asynchronous function
+// Code goes here
+const getSuggestions = async() => {
+  const wordQuery = inputField.value;
+  const endpoint = `${url}${queryParams}${wordQuery}`;
+  try{
+    const response = await fetch(endpoint,{cache: 'no-cache'});
+    if(response.ok){
+      const jsonResponse = await response.json();
+      renderResponse(jsonResponse);
+    }
+  } catch(error){
+    console.log(error);
+  }
+}
+
+// Clear previous results and display results to webpage
+const displaySuggestions = (event) => {
+  event.preventDefault();
+  while(responseField.firstChild){
+    responseField.removeChild(responseField.firstChild)
+  }
+  getSuggestions();
+}
+
+submit.addEventListener('click', displaySuggestions);
+
+// helperFunctions.js file
+// Formats response to look presentable on webpage
+const renderResponse = (res) => {
+  // Handles if res is falsey
+  if(!res){
+    console.log(res.status);
+  }
+  // In case res comes back as a blank array
+  if(!res.length){
+    responseField.innerHTML = "<p>Try again!</p><p>There were no suggestions found!</p>";
+    return;
+  }
+
+  // Creates an empty array to contain the HTML strings
+  let wordList = [];
+  // Loops through the response and caps off at 10
+  for(let i = 0; i < Math.min(res.length, 10); i++){
+    // creating a list of words
+    wordList.push(`<li>${res[i].word}</li>`);
+  }
+  // Joins the array of HTML strings into one string
+  wordList = wordList.join("");
+
+  // Manipulates responseField to render the modified response
+  responseField.innerHTML = `<p>You might be interested in:</p><ol>${wordList}</ol>`;
+  return
+}
+
+// Renders response before it is modified
+const renderRawResponse = (res) => {
+  // Takes the first 10 words from res
+  let trimmedResponse = res.slice(0, 10);
+  // Manipulates responseField to render the unformatted response
+  responseField.innerHTML = `<text>${JSON.stringify(trimmedResponse)}</text>`;
+}
+
+// Renders the JSON that was returned when the Promise from fetch resolves.
+const renderJsonResponse = (res) => {
+  // Creates an empty object to store the JSON in key-value pairs
+  let rawJson = {};
+  for(let key in res){
+    rawJson[key] = res[key];
+  }
+  // Converts JSON into a string and adding line breaks to make it easier to read
+  rawJson = JSON.stringify(rawJson).replace(/,/g, ", \n");
+  // Manipulates responseField to show the returned JSON.
+  responseField.innerHTML = `<pre>${rawJson}</pre>`;
+}
+
+/*-------------------------------------------------------*/
+/* POST async */
+/*-------------------------------------------------------*/
+// information to reach API
+const apiKey = '35b9143a1c484967997dd7ed782ce35e';
+const url = 'https://api.rebrandly.com/v1/links';
+
+// Some page elements
+const inputField = document.querySelector('#input');
+const shortenButton = document.querySelector('#shorten');
+const responseField = document.querySelector('#responseField');
+
+// Asynchronous functions
+const shortenUrl = async () => {
+  const urlToShorten = inputField.value;
+  const data = JSON.stringify({destination: urlToShorten});
+  try {
+    const response = await fetch(
+      url,{
+        method: 'POST',
+        body: data,
+        headers: {
+          'Content-type': 'application/json',
+          'apikey': apiKey}
+      }
+    );
+    if(response.ok){
+      const jsonResponse = await response.json();
+      renderResponse(jsonResponse);
+    }
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+// Clear page and call Asynchronous functions
+const displayShortUrl = (event) => {
+  event.preventDefault();
+  while(responseField.firstChild){
+    responseField.removeChild(responseField.firstChild);
+  }
+  shortenUrl();
+}
+
+shortenButton.addEventListener('click', displayShortUrl);
+
+// helpFunctions.js
+// Manipulates responseField to render a formatted and appropriate message
+const renderResponse = (res) => {
+  // Displays either message depending on results
+  if(res.errors){
+    responseField.innerHTML = "<p>Sorry, couldn't format your URL.</p><p>Try again.</p>";
+  } else {  
+    responseField.innerHTML = `<p>Your shortened url is: </p><p> ${res.shortUrl} </p>`;
+  }
+}
+
+// Manipulates responseField to render an unformatted response
+const renderRawResponse = (res) => {
+  // Displays either message depending on results
+  if(res.errors){  
+    responseField.innerHTML = "<p>Sorry, couldn't format your URL.</p><p>Try again.</p>";
+  } else {
+    // Adds line breaks for JSON
+    let structuredRes = JSON.stringify(res).replace(/,/g, ", \n");
+    structuredRes = `<pre>${structuredRes}</pre>`;
+    responseField.innerHTML = `${structuredRes}`;
+  }
+}
+
+// Renders the JSON that was returned when the Promise from fetch resolves.
+const renderJsonResponse = (response) => {
+  // Creates an empty object to store the JSON in key-value pairs
+  let rawJson = {}
+  for(let key in response){
+    rawJson[key] = response[key]
+  }
+  // Converts JSON into a string and adding line breaks to make it easier to read
+  rawJson = JSON.stringify(rawJson).replace(/,/g, ", \n")
+  // Manipulates responseField to show the returned JSON.
+  responseField.innerHTML = `<pre>${rawJson}</pre>`
+}
+
+
+
