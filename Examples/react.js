@@ -344,3 +344,45 @@ export class Clock extends React.Component {
     clearInterval(this.intervalID);
   }
 }
+
+/*-------------------------------------------------------*/
+/* functional component with props */
+/*-------------------------------------------------------*/
+//old component declaration way
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+export class NewFriend extends React.Component {
+  render() {
+    return (
+      <div>
+        <img src={this.props.src} />
+      </div>
+    );
+  }
+}
+
+ReactDOM.render(
+  <NewFriend src="https://content.codecademy.com/courses/React/react_photo-squid.jpg" />,
+  document.getElementById('app')
+);
+
+
+
+//the functional component way
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+export const NewFriend = (props) => {
+    return (
+      <div>
+        <img src={props.src} />
+      </div>
+    );
+}
+
+ReactDOM.render(
+  <NewFriend src="https://content.codecademy.com/courses/React/react_photo-squid.jpg" />,
+  document.getElementById('app')
+);
+
