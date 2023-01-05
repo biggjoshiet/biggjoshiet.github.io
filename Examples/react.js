@@ -386,3 +386,380 @@ ReactDOM.render(
   document.getElementById('app')
 );
 
+
+/*-------------------------------------------------------*/
+/*example of using hooks instead of components/functions */
+/*-------------------------------------------------------*/
+//index.js
+import React from "react";
+import ReactDOM from "react-dom";
+// import App from "./Container/AppClass";
+import App from "./Container/AppFunction";
+
+ReactDOM.render(
+  <App />,
+  document.getElementById("app")
+);
+
+//component version
+import React, { Component } from "react";
+import NewTask from "../Presentational/NewTask";
+import TasksList from "../Presentational/TasksList";
+
+export default class AppClass extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      newTask: {},
+      allTasks: []
+    };
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+    this.handleDelete = this.handleDelete.bind(this);
+  }
+
+  handleChange({ target }){
+    const { name, value } = target;
+    this.setState((prevState) => ({
+      ...prevState,
+      newTask: {
+        ...prevState.newTask,
+        [name]: value,
+        id: Date.now()
+      }
+    }));
+  }
+
+  handleSubmit(event){
+    event.preventDefault();
+    if (!this.state.newTask.title) return;
+    this.setState((prevState) => ({
+      allTasks: [prevState.newTask, ...prevState.allTasks],
+      newTask: {}
+    }));
+  }
+
+  handleDelete(taskIdToRemove){
+    this.setState((prevState) => ({
+      ...prevState,
+      allTasks: prevState.allTasks.filter((task) => task.id !== taskIdToRemove)
+    }));
+  }
+
+  render() {
+    return (
+      <main>
+        <h1>Tasks</h1>
+        <NewTask
+          newTask={this.state.newTask}
+          handleChange={this.handleChange}
+          handleSubmit={this.handleSubmit}
+        />
+        <TasksList
+          allTasks={this.state.allTasks}
+          handleDelete={this.handleDelete}
+        />
+      </main>
+    );
+  }
+}
+
+//hooks version
+import React, { useState } from "react";
+import NewTask from "../Presentational/NewTask";
+import TasksList from "../Presentational/TasksList";
+
+export default function AppFunction() {
+  const [newTask, setNewTask] = useState({});
+  const handleChange = ({ target }) => {
+    const { name, value } = target;
+    setNewTask((prev) => ({ ...prev, id: Date.now(), [name]: value }));
+  };
+
+  const [allTasks, setAllTasks] = useState([]);
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (!newTask.title) return;
+    setAllTasks((prev) => [newTask, ...prev]);
+    setNewTask({});
+  };
+  const handleDelete = (taskIdToRemove) => {
+    setAllTasks((prev) => prev.filter((task) => task.id !== taskIdToRemove));
+  };
+
+  return (
+    <main>
+      <h1>Tasks</h1>
+      <NewTask
+        newTask={newTask}
+        handleChange={handleChange}
+        handleSubmit={handleSubmit}
+      />
+      <TasksList allTasks={allTasks} handleDelete={handleDelete} />
+    </main>
+  );
+}
+
+/*-------------------------------------------------------*/
+/* example of destructuring and and not using inline event handlers */
+/*-------------------------------------------------------*/ 
+const handleChange = (event) => {
+  const newEmail = event.target.value;
+  setEmail(newEmail);
+}
+//To this:
+
+const handleChange = (event) => setEmail(event.target.value);
+//Or even, use object destructuring to just write this:
+
+const handleChange = ({target}) => setEmail(target.value);
+
+/*-------------------------------------------------------*/ 
+/* setting from a previous state pagination */
+/*-------------------------------------------------------*/ 
+import React, { useState } from 'react';
+
+export default function QuizNavBar({ questions }) {
+  const [questionIndex, setQuestionIndex] = useState(0);
+
+  // define event handlers 
+  const goBack = () => {
+    setQuestionIndex(prevQuestionIndex => prevQuestionIndex - 1);
+  }
+  const goToNext = () => {
+    setQuestionIndex(prevQuestionIndex => prevQuestionIndex + 1);
+  }
+  // determine if on the first question or not 
+
+  const onLastQuestion = questionIndex === questions.length - 1;
+
+  const onFirstQuestion = questionIndex === 0;
+
+  return (
+    <nav>
+      <span>Question #{questionIndex + 1}</span>
+      <div>
+        <button onClick={goBack} disabled={onFirstQuestion}>
+          Go Back
+        </button>
+        <button onClick={goToNext}disabled={onLastQuestion}>
+          Next Question
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+/*-------------------------------------------------------*/ 
+/* Pizza ordering site example with two arrays as lists */
+/*-------------------------------------------------------*/ 
+import React, { useState } from "react";
+ 
+const options = ["Bell Pepper", "Sausage", "Pepperoni", "Pineapple"];
+ 
+export default function PersonalPizza() {
+  const [selected, setSelected] = useState([]);
+ 
+  const toggleTopping = ({target}) => {
+    const clickedTopping = target.value;
+    setSelected((prev) => {
+     // check if clicked topping is already selected
+      if (prev.includes(clickedTopping)) {
+        // filter the clicked topping out of state
+        return prev.filter(t => t !== clickedTopping);
+      } else {
+        // add the clicked topping to our state
+        return [clickedTopping, ...prev];
+      }
+    });
+  };
+ 
+  return (
+    <div>
+      {options.map(option => (
+        <button value={option} onClick={toggleTopping} key={option}>
+          {selected.includes(option) ? "Remove " : "Add "}
+          {option}
+        </button>
+      ))}
+      <p>Order a {selected.join(", ")} pizza</p>
+    </div>
+  );
+}
+JavaScript arrays are the best data model for managing and rendering JSX lists. In this example, we are using two arrays:
+
+options is an array that contains the names of all of the pizza toppings available
+selected is an array representing the selected toppings for our personal pizza
+
+/*-------------------------------------------------------*/ 
+/* example of a submit form */
+/*-------------------------------------------------------*/ 
+import React, { useState } from "react";
+
+export default function EditProfile() {
+  const [profile, setProfile] = useState({});
+
+ const handleChange = ({ target }) => {
+    const { name, value } = target;
+    setProfile((prevProfile) => ({
+      ...prevProfile,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    alert(JSON.stringify(profile, '', 2));
+  };
+
+  return (
+    <form onSubmit={handleSubmit}> 
+      <input
+        value={profile.firstName || ''}
+        onChange={handleChange}
+        name="firstName"
+        type="text"
+        placeholder="First Name"
+      />
+      <input
+        value={profile.lastName || ''}
+        onChange={handleChange}
+        type="text"
+        name="lastName"
+        placeholder="Last Name"
+      />
+      <input
+        value={profile.bday || ''}
+        onChange={handleChange}
+        type="date"
+        name="bday"
+      />
+      <input
+        value={profile.password || ''}
+        onChange={handleChange}
+        type="password"
+        name="password"
+        placeholder="Password"
+      />
+      <button type="submit">Save Profile</button>
+    </form>
+  );
+}
+
+/*-------------------------------------------------------*/ 
+/* class component to a function component */
+/*-------------------------------------------------------*/ 
+//index.js
+import React from "react";
+import ReactDOM from "react-dom";
+import App from "./Container/AppClass";
+// import App from "./Container/AppFunction";
+
+ReactDOM.render(
+  <App />,
+  document.getElementById("app")
+);
+
+//appClass.js
+import React, { Component } from "react";
+import NewTask from "../Presentational/NewTask";
+import TasksList from "../Presentational/TasksList";
+
+export default class AppClass extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      newTask: {},
+      allTasks: []
+    };
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+    this.handleDelete = this.handleDelete.bind(this);
+  }
+
+  handleChange({ target }){
+    const { name, value } = target;
+    this.setState((prevState) => ({
+      ...prevState,
+      newTask: {
+        ...prevState.newTask,
+        [name]: value,
+        id: Date.now()
+      }
+    }));
+  }
+
+  handleSubmit(event){
+    event.preventDefault();
+    if (!this.state.newTask.title) return;
+    this.setState((prevState) => ({
+      allTasks: [prevState.newTask, ...prevState.allTasks],
+      newTask: {}
+    }));
+  }
+
+  handleDelete(taskIdToRemove){
+    this.setState((prevState) => ({
+      ...prevState,
+      allTasks: prevState.allTasks.filter((task) => task.id !== taskIdToRemove)
+    }));
+  }
+
+  render() {
+    return (
+      <main>
+        <h1>Tasks</h1>
+        <NewTask
+          newTask={this.state.newTask}
+          handleChange={this.handleChange}
+          handleSubmit={this.handleSubmit}
+        />
+        <TasksList
+          allTasks={this.state.allTasks}
+          handleDelete={this.handleDelete}
+        />
+      </main>
+    );
+  }
+}
+
+
+//appFunction.js
+import React, { useState } from "react";
+import NewTask from "../Presentational/NewTask";
+import TasksList from "../Presentational/TasksList";
+
+export default function AppFunction() {
+  const [newTask, setNewTask] = useState({});
+  const handleChange = ({ target }) => {
+    const { name, value } = target;
+    setNewTask((prev) => ({ ...prev, id: Date.now(), [name]: value }));
+  };
+
+  const [allTasks, setAllTasks] = useState([]);
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if (!newTask.title) return;
+    setAllTasks((prev) => [newTask, ...prev]);
+    setNewTask({});
+  };
+  const handleDelete = (taskIdToRemove) => {
+    setAllTasks((prev) => prev.filter(
+      (task) => task.id !== taskIdToRemove
+    ));
+  };
+
+  return (
+    <main>
+      <h1>Tasks</h1>
+      <NewTask
+        newTask={newTask}
+        handleChange={handleChange}
+        handleSubmit={handleSubmit}
+      />
+      <TasksList allTasks={allTasks} handleDelete={handleDelete} />
+    </main>
+  );
+}
+
+
