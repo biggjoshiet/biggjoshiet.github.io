@@ -762,4 +762,558 @@ export default function AppFunction() {
   );
 }
 
+/*-------------------------------------------------------*/ 
+/*calling useEffect (after state, before event handlers)*/
+/* with event cleanup in return of the useEffect call
+/*-------------------------------------------------------*/ 
+import React, { useState, useEffect } from 'react';
 
+export default function Counter() {
+  const [clickCount, setClickCount] = useState(0);
+
+  const increment = () => setClickCount((prev) => prev + 1);
+
+  useEffect(() => {
+    document.addEventListener('mousedown', increment);
+    return () => {
+      document.removeEventListener('mousedown', increment);
+    };
+  });
+
+  return (
+      <h1>Document Clicks: {clickCount}</h1>
+  );
+}
+
+/*-------------------------------------------------------*/ 
+/*Example with cleanup, and choosing when to update*/
+/*-------------------------------------------------------*/ 
+import React, { useState,useEffect } from 'react';
+
+export default function Timer() {
+  const [time, setTime] = useState(0);
+  const [name, setName] = useState("");
+
+  useEffect(() => {
+     const intervalId = setInterval(() => {
+      setTime((prev) => prev + 1);
+    }, 1000);
+  return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  const handleChange = ({ target }) => setName(target.value);
+
+  return (
+    <>
+      <h1>Time: {time}</h1>
+      <input value={name} onChange={handleChange} type='text' /> 
+    </>
+  );
+}
+
+/*-------------------------------------------------------*/ 
+/* React while fetching data and using hooks
+/*-------------------------------------------------------*/ 
+import React, { useState, useEffect } from 'react';
+import { get } from './mockBackend/fetch';
+
+export default function Forecast() {
+  const [data, setData] = useState(null);
+  const [notes, setNotes] = useState({});
+  const [forecastType, setForecastType] = useState('/daily');
+
+  useEffect(() => {
+    alert('Requested data from server...');
+    get(forecastType).then((response) => {
+      alert('Response: ' + JSON.stringify(response,'',2));
+      setData(response.data);
+    });
+  }, [forecastType]);
+
+  const handleChange = (itemId) => ({ target }) =>
+    setNotes((prev) => ({
+      ...prev,
+      [itemId]: target.value
+    }));
+
+  if (!data) {
+    return <p>Loading...</p>;
+  }
+
+  return (
+    <div className='App'>
+      <h1>My Weather Planner</h1>
+      <div>
+        <button onClick={() => setForecastType('/daily')}>5-day</button>
+        <button onClick={() => setForecastType('/hourly')}>Today</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Summary</th>
+            <th>Avg Temp</th>
+            <th>Precip</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((item) => {
+            return (
+              <tr key={item.id}>
+                <td>{item.summary}</td>
+                <td> {item.temp.avg}°F</td>
+                <td>{item.precip}%</td>
+                <td>
+                  <input
+                    value={notes[item.id] || ''}
+                    onChange={handleChange(item.id)}
+                  />
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/*-------------------------------------------------------*/ 
+/* Rules of Hooks
+There are two main rules to keep in mind when using Hooks:
+only call Hooks at the top level
+only call Hooks from React functions */
+/*-------------------------------------------------------*/ 
+
+
+/*-------------------------------------------------------*/ 
+/* Example with categories and get calls */
+/*-------------------------------------------------------*/ 
+import React, { useState, useEffect } from 'react';
+import { get } from './mockBackend/fetch';
+
+export default function Shop() {
+  const [categories, setCategories] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [items, setItems] = useState({});
+
+  useEffect(() => {
+    get('/categories').then((response) => {
+      setCategories(response.data);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (selectedCategory && !items[selectedCategory]) {
+      get(`/items?category=${selectedCategory}`).then((response) => {
+        setItems((prev) => ({ ...prev, [selectedCategory]: response.data }));
+      });
+    }
+  }, [items, selectedCategory]);
+
+  if (!categories) {
+    return <p>Loading..</p>;
+  }
+
+  return (
+    <div className='App'>
+      <h1>Clothes 'n Things</h1>
+      <nav>
+        {categories.map((category) => (
+          <button key={category} onClick={() => setSelectedCategory(category)}>
+            {category}
+          </button>
+        ))}
+      </nav>
+      <h2>{selectedCategory}</h2>
+      <ul>
+        {!items[selectedCategory]
+          ? null
+          : items[selectedCategory].map((item) => <li key={item}>{item}</li>)}
+      </ul>
+    </div>
+  );
+}
+
+/*-------------------------------------------------------*/ 
+/* Refactoring multiple data changes in a hook to a single */
+/*-------------------------------------------------------*/ 
+//Starting
+import React, { useState, useEffect } from 'react';
+import { get } from './mockBackend/fetch';
+
+export default function SocialNetwork() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    Promise.all([get('/menu'), get('/news-feed'), get('/friends')]).then(
+      ([menuResponse, newsFeedResponse, friendsResponse]) => {
+        setData({
+          menu: menuResponse.data,
+          newsFeed: newsFeedResponse.data,
+          friends: friendsResponse.data
+        });
+      }
+    );
+  }, []);
+
+  return (
+    <div className='App'>
+      <h1>My Network</h1>
+      {!data || !data.menu ? <p>Loading..</p> : (
+        <nav>
+          {data.menu.map((menuItem) => (
+            <button key={menuItem}>{menuItem}</button>
+          ))}
+        </nav>
+      )}
+      <div className='content'>
+        {!data || !data.newsFeed ? <p>Loading..</p> : (
+          <section>
+            {data.newsFeed.map(({ id, title, message, imgSrc }) => (
+              <article key={id}>
+                <h3>{title}</h3>
+                <p>{message}</p>
+                <img src={imgSrc} alt='' />
+              </article>
+            ))}
+          </section>
+        )}
+        {!data || !data.friends ? <p>Loading..</p> : (
+          <aside>
+            <ul>
+              {data.friends
+                .sort((a, b) => (a.isOnline && !b.isOnline ? -1 : 0))
+                .map(({ id, name, isOnline }) => (
+                  <li key={id} className={isOnline ? 'online' : 'offline'}>
+                    {name}
+                  </li>
+                ))}
+            </ul>
+          </aside>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+//Solution
+import React, { useState, useEffect } from 'react';
+import { get } from './mockBackend/fetch';
+
+export default function SocialNetwork() {
+  const [menu, setMenu] = useState(null);
+  useEffect(() => {
+    get('/menu').then((response) => {
+      setMenu(response.data);
+    });
+  }, []);
+
+  const [newsFeed, setNewsFeed] = useState(null);
+  useEffect(() => {
+    get('/news-feed').then((response) => {
+      setNewsFeed(response.data);
+    });
+  }, []);
+
+  const [friends, setFriends] = useState(null);
+  useEffect(() => {
+    get('/friends').then((response) => {
+      setFriends(response.data);
+    });
+  }, []);
+
+  return (
+    <div className='App'>
+      <h1>My Network</h1>
+      {!menu ? (
+        <p>Loading..</p>
+      ) : (
+        <nav>
+          {menu.map((menuItem) => (
+            <button key={menuItem}>{menuItem}</button>
+          ))}
+        </nav>
+      )}
+      <div className='content'>
+        {!newsFeed ? (
+          <p>Loading..</p>
+        ) : (
+          <section>
+            {newsFeed.map(({ id, title, message, imgSrc }) => (
+              <article key={id}>
+                <h3>{title}</h3>
+                <p>{message}</p>
+                <img src={imgSrc} alt='' />
+              </article>
+            ))}
+          </section>
+        )}
+        {!friends ? (
+          <p>Loading..</p>
+        ) : (
+          <aside>
+            <ul>
+              {friends
+                .sort((a, b) => (a.isOnline && !b.isOnline ? -1 : 0))
+                .map(({ id, name, isOnline }) => (
+                  <li key={id} className={isOnline ? 'online' : 'offline'}>
+                    {name}
+                  </li>
+                ))}
+            </ul>
+          </aside>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/*-------------------------------------------------------*/ 
+/* example of inline JSX styles */
+/*-------------------------------------------------------*/ 
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+const styles = {
+  background: 'lightblue',
+  color: 'darkred',
+  marginTop: 100,
+  fontSize: 50
+}
+
+const styleMe = <h1 style={styles}>Please style me! I am so bland!</h1>;
+
+ReactDOM.render(
+  styleMe, 
+  document.getElementById('app')
+);
+
+/*-------------------------------------------------------*/ 
+/* defining styles, and exporting/importing them */
+/*-------------------------------------------------------*/ 
+//defining the styles and exporting
+const fontFamily = 'Comic Sans MS, Lucida Handwriting, cursive';
+const background = 'pink url("https://content.codecademy.com/programs/react/images/welcome-to-my-homepage.gif") fixed';
+const fontSize = '4em';
+const padding = '45px 0';
+const color = 'green';
+
+export const styles = {
+  fontFamily: fontFamily,
+  background: background,
+  fontSize: fontSize,
+  padding: padding,
+  color: color
+};
+
+//importing and using some of them
+import React from 'react';
+import { styles } from './styles.js';
+
+const h1Style = {
+  color: styles.color,
+  fontSize: styles.fontSize,
+  fontFamily: styles.fontFamily,
+  padding: styles.padding,
+  margin: 0,
+}
+
+export class AttentionGrabber extends React.Component {
+  render() {
+    return <h1 style={h1Style}>WELCOME TO MY HOMEPAGE!</h1>;
+  }
+}
+
+/*-------------------------------------------------------*/ 
+/*breaking up a container component, and adding proptype */
+/*-------------------------------------------------------*/ 
+//og code
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+const GUINEAPATHS = [
+  'https://content.codecademy.com/courses/React/react_photo-guineapig-1.jpg',
+  'https://content.codecademy.com/courses/React/react_photo-guineapig-2.jpg',
+  'https://content.codecademy.com/courses/React/react_photo-guineapig-3.jpg',
+  'https://content.codecademy.com/courses/React/react_photo-guineapig-4.jpg'
+];
+
+class GuineaPigs extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = { currentGP: 0 };
+
+    this.interval = null;
+
+    this.nextGP = this.nextGP.bind(this);
+  }
+
+  nextGP() {
+    let current = this.state.currentGP;
+    let next = ++current % GUINEAPATHS.length;
+    this.setState({ currentGP: next });
+  }
+
+  componentDidMount() {
+    this.interval = setInterval(this.nextGP, 5000);
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.interval);
+  }
+
+  render() {
+    let src = GUINEAPATHS[this.state.currentGP];
+    return (
+      <div>
+        <h1>Cute Guinea Pigs</h1>
+        <img src={src} />
+      </div>
+    );
+  }
+}
+
+ReactDOM.render(
+  <GuineaPigs />,
+  document.getElementById('app')
+);
+
+//new code Presentation component with PropType used
+import React from 'react';
+import PropTypes from 'prop-types';
+
+export class GuineaPigs extends React.Component {
+  
+  render() {
+    let src = this.props.src;
+    return (
+      <div>
+        <h1>Cute Guinea Pigs</h1>
+        <img src={src} />
+      </div>
+    );
+  }
+}
+
+GuineaPigs.propTypes = {
+  src: PropTypes.string.isRequired
+}
+
+//new code container component
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { GuineaPigs } from '../components/GuineaPigs';
+
+const GUINEAPATHS = [
+  'https://content.codecademy.com/courses/React/react_photo-guineapig-1.jpg',
+  'https://content.codecademy.com/courses/React/react_photo-guineapig-2.jpg',
+  'https://content.codecademy.com/courses/React/react_photo-guineapig-3.jpg',
+  'https://content.codecademy.com/courses/React/react_photo-guineapig-4.jpg'
+];
+
+class GuineaPigsContainer extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = { currentGP: 0 };
+
+    this.interval = null;
+
+    this.nextGP = this.nextGP.bind(this);
+  }
+
+  nextGP() {
+    let current = this.state.currentGP;
+    let next = ++current % GUINEAPATHS.length;
+    this.setState({ currentGP: next });
+  }
+
+  componentDidMount() {
+    this.interval = setInterval(this.nextGP, 5000);
+  }
+
+  componentWillUnmount() {
+    clearInterval(this.interval);
+  }
+
+  render() { 
+    const src = GUINEAPATHS[this.state.currentGP]; 
+    return <GuineaPigs src={src} />;
+  }
+}
+
+ReactDOM.render(
+  <GuineaPigsContainer />, 
+  document.getElementById('app')
+);
+
+/*-------------------------------------------------------*/ 
+/* Example of PropTypes usage */
+/*-------------------------------------------------------*/ 
+import React from 'react';
+import PropTypes from 'prop-types';
+
+export class BestSeller extends React.Component {
+  render() {
+    return (
+      <li>
+        Title: <span>
+          {this.props.title}
+        </span><br />
+        
+        Author: <span>
+          {this.props.author}
+        </span><br />
+        
+        Weeks: <span>
+          {this.props.weeksOnList}
+        </span>
+      </li>
+    );
+  }
+}
+
+BestSeller.propTypes = {
+  title: PropTypes.string.isRequired,
+  author: PropTypes.string.isRequired,
+  weeksOnList: PropTypes.number.isRequired
+};
+
+/*-------------------------------------------------------*/ 
+/* example of updating the DOM based on the user input */
+/*-------------------------------------------------------*/ 
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+export class Input extends React.Component {
+  constructor(props) {
+    super(props);
+    
+    this.state = { userInput: '' };
+    
+    this.handleUserInput = this.handleUserInput.bind(this);
+  }
+  
+  handleUserInput(e) {
+    this.setState({userInput: e.target.value});
+  }
+
+  render() {
+    return (
+      <div>
+        <input type="text" onChange={this.handleUserInput} value={this.state.userInput}/>
+        <h1>{this.state.userInput}</h1>
+      </div>
+    );
+  }
+}
+
+ReactDOM.render(
+  <Input />,
+  document.getElementById('app')
+);
